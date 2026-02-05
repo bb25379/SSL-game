@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>SSL 業務大亨 - 完整版</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --success: #27ae60;
+            --gold: #f1c40f;
+            --bg: #dfe6e9;
+            --combo-color: #ff4757;
+        }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        
+        /* 佈局設計：左側上下，右側長條 */
+        #game-world { 
+            display: grid; 
+            grid-template-columns: 1fr 350px; 
+            grid-template-rows: 1fr 1.2fr; 
+            gap: 15px; 
+            width: 1250px; 
+            height: 95vh; 
+            position: relative;
+        }
+
+        .panel { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ccc; }
+        
+        /* 開始遮罩 */
+        #start-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.98); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border-radius: 12px; color: white; text-align: center;
+        }
+
+        /* 秘笈彈窗 Overlay */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            display: none; justify-content: center; align-items: center;
+        }
+        #modal { background: white; padding: 30px; border-radius: 15px; width: 550px; color: #333; }
+
+        /* 左上：業務櫃檯 */
+        #counter { grid-column: 1; grid-row: 1; display: flex; flex-direction: row; align-items: center; gap: 25px; }
+        #customer-icon { font-size: 90px; min-width: 130px; text-align: center; }
+        .bubble { 
+            background: #fff; border: 3px solid var(--primary); border-radius: 15px; 
+            padding: 20px; font-size: 20px; font-weight: bold; line-height: 1.6;
+            flex-grow: 1; box-shadow: 5px 5px 0 var(--primary); min-height: 100px;
+            display: flex; align-items: center;
+        }
+
+        /* 左下：憑證方案 */
+        #controls { grid-column: 1; grid-row: 2; }
+        .btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 10px 0; }
+        button.option-btn { 
+            padding: 18px 10px; border: 2px solid #ddd; border-radius: 10px; 
+            background: #fff; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s;
+        }
+        button.option-btn.selected { background: var(--primary); color: white; border-color: var(--primary); }
+        #submit-btn { 
+            width: 100%; padding: 20px; margin-top: 25px; font-size: 32px;
+            background: var(--success); color: white; border: none; border-radius: 50px;
+            cursor: pointer; font-weight: 900; box-shadow: 0 5px 0 #1e8449;
+        }
+        #submit-btn:disabled { background: #ccc; box-shadow: none; cursor: not-allowed; }
+
+        /* 右側：營運數據 */
+        #dashboard { grid-column: 2; grid-row: 1 / span 2; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 6px solid var(--primary); }
+        .stat-label { font-size: 14px; color: #636e72; font-weight: bold; }
+        .stat-value { font-size: 24px; font-weight: 900; color: var(--primary); }
+        #fame-bar-bg { background: #eee; height: 20px; border-radius: 10px; margin-top: 8px; overflow: hidden; border: 1px solid #ccc; }
+        #fame-bar { background: linear-gradient(90deg, #f1c40f, #f39c12); width: 0%; height: 100%; transition: 0.4s; }
+        #timer-box { font-size: 30px; color: var(--accent); font-weight: 900; text-align: center; margin-bottom: 15px; padding: 10px; background: #fff2f2; border-radius: 10px; }
+        #combo-display { font-size: 36px; color: var(--combo-color); font-weight: 900; text-align: center; text-shadow: 2px 2px 0px #000; margin-bottom: 10px; display: none; }
+        #log { font-size: 13px; color: #2d3436; overflow-y: auto; flex-grow: 1; border-top: 2px solid #eee; padding-top: 10px; line-height: 1.7; }
+
+        .angry-mode { border-color: var(--accent) !important; background: #fff5f5 !important; }
+        @keyframes shake { 0%, 100% {transform:translateX(0)} 25% {transform:translateX(-10px)} 75% {transform:translateX(10px)} }
+        .shake { animation: shake 0.2s ease-in-out 2; }
+    </style>
+</head>
+<body>
+
+<div id="overlay">
+    <div id="modal"></div>
+</div>
+
+<div id="game-world">
+    <div id="start-overlay">
+        <h1 style="font-size: 56px; margin-bottom: 10px;">🏆 SSL 業務大亨</h1>
+        <p style="font-size: 20px; margin-bottom: 30px;">專業、快速、精準！目標知名度 100%！</p>
+        <button id="start-btn" onclick="startGame()" style="padding: 20px 60px; font-size: 36px; background: var(--success); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: 900; box-shadow: 0 6px 0 #1e8449;">開始營業</button>
+    </div>
+
+    <div id="counter" class="panel">
+        <div id="customer-icon">☕</div>
+        <div id="dialog-bubble" class="bubble">準備開始中...</div>
+    </div>
+
+    <div id="controls" class="panel">
+        <h2 style="margin: 0 0 15px 0; color: var(--primary);">憑證方案配置</h2>
+        <p><b>1. 網域類型判定 (Domain Type)</b></p>
+        <div class="btn-group" id="type-group">
+            <button class="option-btn" onclick="selectItem('type', 'Single')">單網域</button>
+            <button class="option-btn" onclick="selectItem('type', 'Wildcard')">萬用字元 (Wildcard)</button>
+            <button class="option-btn" onclick="selectItem('type', 'Multi')">多網域 (Multi-Domain)</button>
+        </div>
+        <p style="margin-top: 20px;"><b>2. 驗證等級判定 (Validation Level)</b></p>
+        <div class="btn-group" id="level-group">
+            <button class="option-btn" onclick="selectItem('level', 'DV')">DV (域名驗證)</button>
+            <button class="option-btn" onclick="selectItem('level', 'OV')">OV (企業驗證)</button>
+            <button class="option-btn" onclick="selectItem('level', 'EV')">EV (增強驗證)</button>
+        </div>
+        <button id="submit-btn" onclick="processOrder()" disabled>成交！</button>
+    </div>
+
+    <div id="dashboard" class="panel">
+        <div id="timer-box">⏳ 0.0s</div>
+        <div id="combo-display">🔥 COMBO 0</div>
+        <div class="stat-card">
+            <div class="stat-label">你目前的總收入</div>
+            <div class="stat-value" id="val-money">$ 0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">知名度進度 (Target: 100%)</div>
+            <div id="fame-bar-bg"><div id="fame-bar"></div></div>
+            <div id="val-fame" style="text-align: right; font-size: 14px; font-weight: bold; margin-top:5px;">0%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">市場成本漲幅</div>
+            <div class="stat-value" id="val-cost" style="color: #e67e22;">100%</div>
+        </div>
+        
+        <button onclick="toggleCheatSheet()" style="background:#0984e3; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom:15px; font-size: 16px;">📖 偷看小秘笈 (暫停)</button>
+        
+        <div id="log"></div>
+    </div>
+</div>
+
+<script>
+    const ANIMALS = ["🙋", "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐧", "🐦"];
+    const PRICING = {
+        'Single_DV': 600, 'Single_OV': 4000, 'Single_EV': 5100,
+        'Wildcard_DV': 5500, 'Wildcard_OV': 13000, 'Wildcard_EV': 0,
+        'Multi_DV': 950, 'Multi_OV': 11000, 'Multi_EV': 12000
+    };
+
+    // 題目資料 (略，維持原題庫)
+    const CUSTOMER_POOL = [
+        // 第一區 (DV)
+        { q: "我是個人部落客，網址是 www.pet-life.com，我想趕快拿到網頁鎖頭，越便宜越好。", a_t: "Single", a_l: "DV" },
+        { q: "我是大學生，專題網站是 project.stu.tw。昨晚打電動太晚，教授說只要看到加密標誌就好，不用公司證明。", a_t: "Single", a_l: "DV" },
+        { q: "我們公司做短期促銷，網址 sale-now.com。最近天氣好冷，這網站只用一週，快速核發最重要。", a_t: "Single", a_l: "DV" },
+        { q: "我是接案族，域名是 my-portfolio.net。我個人接案，我還沒有創建公司，只要連線安全就好。", a_t: "Single", a_l: "DV" },
+        { q: "我買了 new-idea.io 要測功能。我還在喝咖啡，沒空準備文件，請給我最快、不用審核公司的方案。", a_t: "Single", a_l: "DV" },
+        { q: "我經營二手書社團 books-old.com.tw，只要 Google 搜尋不跳警告就好。", a_t: "Single", a_l: "DV" },
+        { q: "我是攝影師，網址 art-photo.tw。剛買了新相機，只要作品集能正常訪問就行，今天就要！", a_t: "Single", a_l: "DV" },
+        { q: "我們測試機器用的，網址 internal-test.abc.com。這只放雜物，不用審核公司，隨便買個最基礎的。", a_t: "Single", a_l: "DV" },
+        { q: "我是早餐店老闆，網址 breakfast.tw，我不懂技術，但客人總說掃碼一直跳警告，資訊公司說要一張憑證。", a_t: "Single", a_l: "DV" },
+        { q: "我做遊戲論壇 gamer.org。我只想練習裝 SSL，不想提供身分證以外的資料，請給我最簡單的。", a_t: "Single", a_l: "DV" },
+        { q: "我們是寵物用品平台，有 shop.abc.com 跟 admin.abc.com，就這兩個域名，未來域名不會增加。", a_t: "Single", a_l: "DV" },
+        // 第二區 (OV/Wildcard)
+        { q: "我們是軟體商，有 www, mail, api 等無限個子網域在 dev.com 下。我們是正式公司，憑證要顯示公司名。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我們是電商平台，有 shop.abc.com 跟 admin.abc.com，憑證要在同一張，要顯示公司名稱增加信任。", a_t: "Multi", a_l: "OV" },
+        { q: "我們連鎖飲料店，要管 shop1.tea.com.tw、shop2.tea.com.tw等域名。分店一直開，我不想每加一間就買一次，另外，資安公司說憑證要顯示公司資訊。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我們是標案公司，業主要求 www.project.org 必須顯示我方公司名稱，確認企業身分，越便宜越好。", a_t: "Single", a_l: "OV" },
+        { q: "我是傳產網管，網址 www.factory.com.tw。老闆說在地經營 20 年，憑證裡一定要寫出公司名才穩重。", a_t: "Single", a_l: "OV" },
+        { q: "我們公司分部門用 hr.group.com 跟 it.group.com。我想一勞永逸（未來可能還有很多子域名），且一定要企業等級，因為要給股東看。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我是飯店業者，主網域 hotel.com.tw 下還有 spa, room 等子域（如：spa.hotel.com.tw）。我們有營業登記證（希望憑證上可以寫飯店名稱）。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我們是律師事務所 www.law.com.tw，我們要強化信任，憑證內要顯示公司地址與名稱。", a_t: "Single", a_l: "OV" },
+        { q: "我是物流業，有 tracking.log.com 跟 member.log.com域名，只要一張憑證。要顯示公司名，且未來會加更多子網域。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我們學校有多個處室 *.school.edu.tw，校長說要企業驗證等級，要顯示有學校名稱，因為要讓學生查成績時知道是學校官方網站，但別太貴，咱們金費不多。", a_t: "Wildcard", a_l: "OV" },
+        // 第三區 (EV)
+        { q: "我們是純網銀，網址 www.bank.net。為了防釣魚，要買最高等級，讓用戶一眼看出是正牌銀行。", a_t: "Single", a_l: "EV" },
+        { q: "我是交易所負責人 trade.crypto.io。安全第一，我要審核最嚴格、保額最高的那種，錢不是重點。", a_t: "Single", a_l: "EV" },
+        { q: "我們是賣旅遊保險的公司，只有一個域名 order.insure.com.tw，我們希望憑證有最嚴格的審核，來強化品牌的專業地位。", a_t: "Single", a_l: "EV" },
+        { q: "我是採購網負責人，我們只有一個網頁 www.procure.gov.tw，法規要求涉及金流的系統必須配置增強型驗證 (EV)，非常重要。", a_t: "Single", a_l: "EV" },
+        { q: "我們是電商龍頭 www.mall.com。想在結帳頁給最高安全感，審核要一週也沒關係，請推薦最頂規的，我們多的是錢。", a_t: "Single", a_l: "EV" },
+        { q: "我是支付網關架構師 pay.gate.com。為了符合合規性，我們需要 EV 憑證，並顯示完整公司登記資訊。", a_t: "Single", a_l: "EV" },
+        { q: "我們是證券商 stock.com.tw，我們需要 EV 憑證，這是為了符合金管會的資安建議。", a_t: "Single", a_l: "EV" },
+        { q: "我們經營精品拍賣 ww.luxury.com，雖然不是金流機構，但是客戶很挑剔，我需要向銀行級別那樣的憑證來彰顯網站真實性與公司規模。", a_t: "Single", a_l: "EV" },
+        { q: "我們是大型醫院，掛號系統 reg.hospital.org.tw。為了保護病患隱私並建立權威，決定用 EV 等級。", a_t: "Single", a_l: "EV" },
+        { q: "我們是法律平台 expert.com，案例很敏感。要最高等級的SSL來強化『保密與誠信』，並確保公司身分完全透明，雖然不知道SSL有什麼差別。", a_t: "Single", a_l: "EV" },
+        // 第四區 (Multi-Domain)
+        { q: "我們是保險公司，只有兩個域名 www.insure.com.tw、order.insure.com.tw，我們希望憑證有最嚴格的審核，來強化品牌的專業地位，但是想要盡量便宜的選項。", a_t: "Multi", a_l: "EV" },
+        { q: "我有三個牌子：apple.com, orange.net, banana.org。我想塞在同一張憑證省錢，快速核發就好。", a_t: "Multi", a_l: "DV" },
+        { q: "我是集團 IT，有 a.com, b.com, c.net，我不分開買，管理起來很麻煩。", a_t: "Multi", a_l: "DV" },
+        { q: "我是廣告商，有三個活動頁（名稱確定）：act1.tw, act2.net, act3.com，都是短期的，快速核發搞定就好。", a_t: "Multi", a_l: "DV" },
+        { q: "我們併購了新公司，要管 www.old.com 跟 *.new.com。我們是正式公司，憑證要能同時顯示公司名。", a_t: "Multi", a_l: "OV" },
+        { q: "我是個人職涯顧問，有 blog.com 跟 shop.net，要保護這兩個網站，不用公司證明，越快拿到越好。", a_t: "Multi", a_l: "DV" },
+        { q: "我們跨國餐飲，域名有 pizza.tw, pizza.hk, pizza.sg，要企業驗證等級，且一張統一管理。", a_t: "Multi", a_l: "OV" },
+        { q: "我是幼稚園網站 IT，有 www.food.com 跟 food-member.tw。不同網域但一張解決。", a_t: "Multi", a_l: "DV" },
+        { q: "我們是關懷希望組織，有 hope.org, help.net, love.tw，我們是正式組織，要顯示名稱在憑證裡。", a_t: "Multi", a_l: "OV" },
+        { q: "我們代理軟體，要保護 cloud.com 跟 portal.net，網址不同，我今天要拿到。", a_t: "Multi", a_l: "DV" },
+        { q: "我是會計師，有 lee-cpa.com 跟 chen-cpa.com，要展現事務所企業身分。", a_t: "Multi", a_l: "OV" },
+        // 第五區 (綜合)
+        { q: "我們大電商，有 www.shop.com 加上 *.cdn.shop.com。要一張搞定，且我們是正式公司（SSL要有名稱）。", a_t: "Multi", a_l: "OV" },
+        { q: "我們是政府單位，網址 www.city.tw。但預算被砍，只能用最便宜的，要下午生效，不需顯名。", a_t: "Single", a_l: "DV" },
+        { q: "我們是線上casino（賭場），有 100 個客戶子網域 c1.dev.com, c2.dev.com... 每天增加，不想手動加名單。", a_t: "Wildcard", a_l: "DV" },
+        { q: "我經營自品牌外送平台，有 order.run.com 且未來還會有 driver, partner 等子域（如：driver.run.com），但子域名還沒決定好，要顯名且專業度高。", a_t: "Wildcard", a_l: "OV" },
+        { q: "我買了 mail-test.com 做郵件加密測試，SSL要最便宜、付錢後馬上能拿到的那種。", a_t: "Single", a_l: "DV" },
+        { q: "儲值網站 points.com，有涉及金流，客戶說怕被說詐騙，所以一定要在憑證內顯示公司名稱。", a_t: "Single", a_l: "EV" },
+        { q: "集團有三個主網域，下面又有子域：*.a.com, *.b.com, *.c.com，要一張管全部且顯示公司資訊。", a_t: "Multi", a_l: "OV" },
+        { q: "報社網址 news.com.tw，就這一個站。老闆要求過最嚴格審核，展現媒體公信力，雖然不知道是不是真的有效，老闆不太在乎價格。", a_t: "Single", a_l: "EV" },
+        { q: "藥廠網址 www.med.com。關係到用藥安全，我們願配合所有企業文件審核，給予最高信任。", a_t: "Single", a_l: "EV" },
+        { q: "我是個創業家，官網 www.vibe.io。下週跟創投見面，沒錢沒公司登記，但希望趕快有SSL。", a_t: "Single", a_l: "DV" }
+    ];
+
+    let gameState = {
+        money: 0, fame: 0, cost: 100, days: 0,
+        currentCustomer: null, 
+        timer: 0, combo: 0,
+        isPaused: true, isProcessing: false, gameActive: false,
+        selectedType: null, selectedLevel: null
+    };
+
+    function startGame() {
+        gameState.gameActive = true;
+        gameState.isPaused = false;
+        document.getElementById('start-overlay').style.display = 'none';
+        addLog("🚀 營業正式開始！拼業績囉！");
+    }
+
+    // 主循環
+    setInterval(() => {
+        if (!gameState.gameActive || gameState.isPaused) return;
+
+        // 漲價與接客
+        if (!gameState.currentCustomer && !gameState.isProcessing) {
+            gameState.timer++;
+            if (gameState.timer >= 1) spawnCustomer();
+            return;
+        }
+
+        gameState.timer++;
+        updateTimerUI();
+
+        // 懲罰邏輯
+        if (gameState.timer === 30) {
+            document.getElementById('counter').classList.add('angry-mode');
+            addLog("📢 客戶不爽了：成交金額 9 折計！", "orange");
+        } else if (gameState.timer === 60) {
+            gameState.combo = 0;
+            let p = Math.floor(Math.random() * 10) + 1;
+            gameState.fame = Math.max(0, gameState.fame - p);
+            addLog(`🏃 跑單：等太久氣跑了！知名度 -${p}%`, "red");
+            triggerShake();
+            nextCustomer();
+        } else if (gameState.timer === 90) {
+            let p = Math.floor(Math.random() * 7501) + 500;
+            gameState.money = Math.max(0, gameState.money - p);
+            addLog(`💢 主管：你是在發呆嗎！罰金 $${p}`, "red");
+            triggerShake();
+        }
+        updateUI();
+    }, 1000);
+
+    function toggleCheatSheet() {
+        gameState.isPaused = !gameState.isPaused;
+        const overlay = document.getElementById('overlay');
+        const modal = document.getElementById('modal');
+        if (gameState.isPaused) {
+            overlay.style.display = 'flex';
+            modal.innerHTML = `
+                <h2 style="border-bottom:3px solid #eee; padding-bottom:10px;">📖 業務人員判定參考秘笈</h2>
+                <div style="text-align: left; line-height: 2; font-size: 16px;">
+                    <ul style="list-style-type: none; padding: 0;">
+                        <li>✅ <b>DV 單域名：</b>個人使用、追求速度、便宜、不需顯名。</li>
+                        <li>✅ <b>OV 萬用型 (Wildcard)：</b>正式企業、無限子網域、需顯示公司名。</li>
+                        <li>✅ <b>EV 單域名：</b>金融/大型電商、最高信任、綠色網址標識。</li>
+                        <li>✅ <b>DV 多域名 (SAN)：</b>多個不同網域(不同名字)、快速核發。</li>
+                        <li>✅ <b>OV 多域名：</b>包含不同網域、企業驗證、適合集團統一管理。</li>
+                        <li>✅ <b>DV 萬用型 (Wildcard)：</b>子網域多但不需要企業名稱審核時。</li>
+                    </ul>
+                    <p style="color:var(--accent); font-weight:bold;">※ 點擊下方按鈕回歸戰場，時間將繼續流動！</p>
+                </div>
+                <button onclick="toggleCheatSheet()" style="margin-top:10px; padding:12px 30px; width:100%; background:var(--primary); color:white; border:none; border-radius:10px; cursor:pointer; font-size:18px;">我記住了，繼續奮鬥！</button>
+            `;
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+
+    function spawnCustomer() {
+        const idx = Math.floor(Math.random() * CUSTOMER_POOL.length);
+        gameState.currentCustomer = CUSTOMER_POOL[idx];
+        gameState.timer = 0;
+        document.getElementById('customer-icon').innerText = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
+        document.getElementById('dialog-bubble').innerText = `「${gameState.currentCustomer.q}」`;
+        document.getElementById('counter').classList.remove('angry-mode');
+    }
+
+    function selectItem(group, val) {
+        if (!gameState.gameActive || gameState.isPaused) return;
+        document.querySelectorAll(`#${group}-group button`).forEach(b => b.classList.remove('selected'));
+        event.target.classList.add('selected');
+        if (group === 'type') gameState.selectedType = val;
+        if (group === 'level') gameState.selectedLevel = val;
+        document.getElementById('submit-btn').disabled = !(gameState.selectedType && gameState.selectedLevel);
+    }
+
+    function processOrder() {
+        if (!gameState.currentCustomer || gameState.isProcessing) return;
+        gameState.isProcessing = true;
+
+        const isCorrect = (gameState.selectedType === gameState.currentCustomer.a_t && gameState.selectedLevel === gameState.currentCustomer.a_l);
+        const priceKey = `${gameState.selectedType}_${gameState.selectedLevel}`;
+        let reward = PRICING[priceKey] || 0;
+
+        if (isCorrect && reward > 0) {
+            gameState.combo++;
+            let fameGain = (gameState.combo >= 5) ? 16 : (gameState.combo >= 3 ? 12 : 8);
+            if (gameState.timer >= 30) reward *= 0.9;
+            reward = Math.floor(reward);
+            gameState.money += reward;
+            gameState.fame = Math.min(100, gameState.fame + fameGain);
+            document.getElementById('customer-icon').innerText = "🤩";
+            addLog(`✅ 成交！知名度 +${fameGain} (Combo x${gameState.combo})`, "green");
+        } else {
+            gameState.combo = 0;
+            gameState.money = Math.max(0, gameState.money - 1000);
+            gameState.fame = Math.max(0, gameState.fame - 10);
+            document.getElementById('customer-icon').innerText = "🤬";
+            addLog(`❌ 判斷錯誤！被罰款 $1000，連勝歸零`, "red");
+            triggerShake();
+        }
+
+        updateUI();
+        if (gameState.fame >= 100) endGame();
+        setTimeout(nextCustomer, 1000);
+    }
+
+    function nextCustomer() {
+        gameState.currentCustomer = null;
+        gameState.isProcessing = false;
+        gameState.timer = 0;
+        gameState.selectedType = null;
+        gameState.selectedLevel = null;
+        document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('customer-icon').innerText = "☕";
+        document.getElementById('dialog-bubble').innerText = "下一位客戶正在路上...";
+    }
+
+    function updateUI() {
+        document.getElementById('val-money').innerText = "$ " + gameState.money.toLocaleString();
+        document.getElementById('val-fame').innerText = gameState.fame + "%";
+        document.getElementById('fame-bar').style.width = gameState.fame + "%";
+        const comboEl = document.getElementById('combo-display');
+        if (gameState.combo >= 2) {
+            comboEl.style.display = 'block';
+            comboEl.innerText = `🔥 COMBO ${gameState.combo}`;
+        } else {
+            comboEl.style.display = 'none';
+        }
+    }
+
+    function updateTimerUI() {
+        const box = document.getElementById('timer-box');
+        box.innerText = `⏳ ${gameState.timer.toFixed(1)}s`;
+        box.style.color = gameState.timer >= 30 ? "red" : "black";
+    }
+
+    function addLog(msg, color) {
+        const log = document.getElementById('log');
+        const div = document.createElement('div');
+        div.style.color = color === "green" ? "#27ae60" : (color === "red" ? "#e74c3c" : "#2d3436");
+        div.innerText = `• ${msg}`;
+        log.prepend(div);
+    }
+
+    function triggerShake() {
+        document.getElementById('game-world').classList.add('shake');
+        setTimeout(() => document.getElementById('game-world').classList.remove('shake'), 400);
+    }
+
+    function endGame() {
+        gameState.gameActive = false;
+        document.getElementById('win-screen').style.display = 'flex';
+        document.getElementById('final-money').innerText = `最終收入：$${gameState.money.toLocaleString()}`;
+    }
+</script>
+
+<div id="win-screen" style="position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); display: none; z-index: 9999; justify-content: center; align-items: center; text-align: center; color: white;">
+    <div>
+        <h1 style="font-size: 60px; color: var(--gold);">🏆 業績之神 🏆</h1>
+        <p style="font-size: 24px;">恭喜你成為 SSL 頂尖業務！</p>
+        <h2 id="final-money" style="font-size: 40px; color: var(--success);"></h2>
+        <button onclick="location.reload()" style="padding: 15px 40px; font-size: 20px; border-radius: 30px; cursor: pointer;">再戰一場</button>
+    </div>
+</div>
+
+</body>
+</html>
