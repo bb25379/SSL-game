@@ -12,7 +12,6 @@
             --bg: #dfe6e9;
             --combo-color: #ff4757;
         }
-        /* 修正：讓 body 保持相對定位，作為按鈕的基準 */
         body { 
             font-family: "Microsoft JhengHei", sans-serif; 
             background: var(--bg); 
@@ -25,7 +24,6 @@
             position: relative; 
         }
         
-        /* 返回首頁按鈕：使用 fixed 定位，確保它永遠在畫面右上角且不影響排版 */
         .back-home-btn {
             position: fixed;
             top: 20px;
@@ -36,7 +34,7 @@
             text-decoration: none;
             font-weight: bold;
             border-radius: 8px;
-            z-index: 10000; /* 數值調高，確保在所有遮罩之上 */
+            z-index: 10000;
             transition: all 0.2s;
             border: 1px solid rgba(255,255,255,0.2);
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
@@ -57,7 +55,6 @@
             height: 95vh; 
             position: relative;
         }
-
 
         .panel { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ccc; }
         
@@ -122,7 +119,9 @@
     </style>
 </head>
 <body>
+
 <a href="index.html" class="back-home-btn">🏠 返回主選單</a>
+
 <div id="overlay">
     <div id="modal"></div>
 </div>
@@ -130,7 +129,7 @@
 <div id="game-world">
     <div id="start-overlay">
         <h1 style="font-size: 56px; margin-bottom: 10px;">🏆 SSL 業務大亨 - 瘋狂市場版</h1>
-        <p style="font-size: 20px; margin-bottom: 30px;">現在市場高度動盪中，在市場高峰時多賣點吧！<br>準備好營業了嗎？</br></p>
+        <p style="font-size: 20px; margin-bottom: 30px;">現在市場高度動盪中，觀察變動率，在高峰賣出吧！<br>準備好營業了嗎？</p>
         <button id="start-btn" onclick="startGame()" style="padding: 20px 60px; font-size: 36px; background: var(--success); color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: 900; box-shadow: 0 6px 0 #1e8449;">開始營業</button>
     </div>
 
@@ -153,7 +152,7 @@
             <button class="option-btn" onclick="selectItem('level', 'OV')">OV (企業驗證)</button>
             <button class="option-btn" onclick="selectItem('level', 'EV')">EV (增強驗證)</button>
         </div>
-        <button id="submit-btn" onclick="processOrder()" disabled>成交！</button>
+        <button id="submit-btn" onclick="processOrder()" disabled>送出交易！</button>
     </div>
 
     <div id="dashboard" class="panel">
@@ -169,18 +168,16 @@
             <div id="val-fame" style="text-align: right; font-size: 14px; font-weight: bold; margin-top:5px;">0%</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">市場成本漲幅</div>
+            <div class="stat-label">市場成本變動率</div>
             <div class="stat-value" id="val-cost" style="color: #e67e22;">100%</div>
         </div>
-        
         <button onclick="toggleCheatSheet()" style="background:#0984e3; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold; margin-bottom:15px; font-size: 16px; width: 100%;">📖 偷看小秘笈 (暫停)</button>
-        
         <div id="log"></div>
     </div>
 </div>
 
 <script>
-    const ANIMALS = ["🙋", "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐧", "🐦"];
+    const ANIMALS = ["🙋", "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐧", "🐦", "👽", "👾"];
     const PRICING = {
         'Single_DV': 600, 'Single_OV': 4000, 'Single_EV': 5100,
         'Wildcard_DV': 5500, 'Wildcard_OV': 13000, 'Wildcard_EV': 0,
@@ -201,11 +198,10 @@
     ];
 
     const CUSTOMER_POOL = [
-        // 第一區 (DV)
         { q: "我是個人部落客，網址是 www.pet-life.com，我想趕快拿到網頁鎖頭，越便宜越好。", a_t: "Single", a_l: "DV" },
         { q: "我是大學生，專題網站是 project.stu.tw。昨晚打電動太晚，教授說只要看到加密標誌就好，不用公司證明。", a_t: "Single", a_l: "DV" },
         { q: "我們公司做短期促銷，網址 sale-now.com。最近天氣好冷，這網站只用一週，快速核發最重要。", a_t: "Single", a_l: "DV" },
-        { q: "我是接案族，域名是 my-portfolio.net。我個人接案，我還沒有創建公司，只要連線安全就好。", a_t: "Single", a_l: "DV" },
+        { q: "我是接案族，域名是 my-portfolio.net。我還沒有創建公司，只要連線安全就好。", a_t: "Single", a_l: "DV" },
         { q: "我買了 new-idea.io 要測功能。我還在喝咖啡，沒空準備文件，請給我最快、不用審核公司的方案。", a_t: "Single", a_l: "DV" },
         { q: "我經營二手書社團 books-old.com.tw，只要 Google 搜尋不跳警告就好。", a_t: "Single", a_l: "DV" },
         { q: "我是攝影師，網址 art-photo.tw。剛買了新相機，只要作品集能正常訪問就行，今天就要！", a_t: "Single", a_l: "DV" },
@@ -213,7 +209,6 @@
         { q: "我是早餐店老闆，網址 breakfast.tw，我不懂技術，但客人總說掃碼一直跳警告，資訊公司說要一張憑證。", a_t: "Single", a_l: "DV" },
         { q: "我做遊戲論壇 gamer.org。我只想練習裝 SSL，不想提供身分證以外的資料，請給我最簡單的。", a_t: "Single", a_l: "DV" },
         { q: "我們是寵物用品平台，有 shop.abc.com 跟 admin.abc.com，就這兩個域名，未來域名不會增加。", a_t: "Single", a_l: "DV" },
-        // 第二區 (OV/Wildcard)
         { q: "我們是軟體商，有 www, mail, api 等無限個子網域在 dev.com 下。我們是正式公司，憑證要顯示公司名。", a_t: "Wildcard", a_l: "OV" },
         { q: "我們是電商平台，有 shop.abc.com 跟 admin.abc.com，憑證要在同一張，要顯示公司名稱增加信任。", a_t: "Multi", a_l: "OV" },
         { q: "我們連鎖飲料店，要管 shop1.tea.com.tw、shop2.tea.com.tw等域名。分店一直開，我不想每加一間就買一次，另外，資安公司說憑證要顯示公司資訊。", a_t: "Wildcard", a_l: "OV" },
@@ -224,18 +219,16 @@
         { q: "我們是律師事務所 www.law.com.tw，我們要強化信任，憑證內要顯示公司地址與名稱。", a_t: "Single", a_l: "OV" },
         { q: "我是物流業，有 tracking.log.com 跟 member.log.com域名，只要一張憑證。要顯示公司名，且未來會加更多子網域。", a_t: "Wildcard", a_l: "OV" },
         { q: "我們學校有多個處室 *.school.edu.tw，校長說要企業驗證等級，要顯示有學校名稱，因為要讓學生查成績時知道是學校官方網站，但別太貴，咱們金費不多。", a_t: "Wildcard", a_l: "OV" },
-        // 第三區 (EV)
         { q: "我們是純網銀，網址 www.bank.net。為了防釣魚，要買最高等級，讓用戶一眼看出是正牌銀行。", a_t: "Single", a_l: "EV" },
         { q: "我是交易所負責人 trade.crypto.io。安全第一，我要審核最嚴格、保額最高的那種，錢不是重點。", a_t: "Single", a_l: "EV" },
         { q: "我們是賣旅遊保險的公司，只有一個域名 order.insure.com.tw，我們希望憑證有最嚴格的審核，來強化品牌的專業地位。", a_t: "Single", a_l: "EV" },
         { q: "我是採購網負責人，我們只有一個網頁 www.procure.gov.tw，法規要求涉及金流的系統必須配置增強型驗證 (EV)，非常重要。", a_t: "Single", a_l: "EV" },
-        { q: "我們是電商龍頭 www.mall.com。想在結帳頁給最高安全感，審核要一週也沒關係，請推薦最頂規的，我們多的是錢。", a_t: "Single", a_l: "EV" },
+        { q: "我們是電商龍頭 www.mall.com。想在結帳頁給最高安全感，審核要一週也沒關係，請推薦最頂規的。", a_t: "Single", a_l: "EV" },
         { q: "我是支付網關架構師 pay.gate.com。為了符合合規性，我們需要 EV 憑證，並顯示完整公司登記資訊。", a_t: "Single", a_l: "EV" },
         { q: "我們是證券商 stock.com.tw，我們需要 EV 憑證，這是為了符合金管會的資安建議。", a_t: "Single", a_l: "EV" },
         { q: "我們經營精品拍賣 ww.luxury.com，雖然不是金流機構，但是客戶很挑剔，我需要向銀行級別那樣的憑證來彰顯網站真實性與公司規模。", a_t: "Single", a_l: "EV" },
         { q: "我們是大型醫院，掛號系統 reg.hospital.org.tw。為了保護病患隱私並建立權威，決定用 EV 等級。", a_t: "Single", a_l: "EV" },
         { q: "我們是法律平台 expert.com，案例很敏感。要最高等級的SSL來強化『保密與誠信』，並確保公司身分完全透明，雖然不知道SSL有什麼差別。", a_t: "Single", a_l: "EV" },
-        // 第四區 (Multi-Domain)
         { q: "我們是保險公司，只有兩個域名 www.insure.com.tw、order.insure.com.tw，我們希望憑證有最嚴格的審核，只要有一張憑證，來強化品牌的專業地位，但是想要盡量便宜的選項。", a_t: "Multi", a_l: "EV" },
         { q: "我有三個牌子：apple.com, orange.net, banana.org。我想塞在同一張憑證省錢，快速核發就好。", a_t: "Multi", a_l: "DV" },
         { q: "我是集團 IT，有 a.com, b.com, c.net，我不分開買，管理起來很麻煩。", a_t: "Multi", a_l: "DV" },
@@ -246,8 +239,7 @@
         { q: "我是幼稚園網站 IT，有 www.food.com 跟 food-member.tw。不同網域但一張解決。", a_t: "Multi", a_l: "DV" },
         { q: "我們是關懷希望組織，有 hope.org, help.net, love.tw，我們是正式組織，要一張憑證可以多個站一起用，要顯示單位名稱在憑證裡。", a_t: "Multi", a_l: "OV" },
         { q: "我們代理軟體，要保護 cloud.com 跟 portal.net，網址不同但憑證同一張，我今天要拿到。", a_t: "Multi", a_l: "DV" },
-        { q: "我是會計師，有 lee-cpa.com 跟 chen-cpa.com，要展現事務所企業身分。", a_t: "Multi", a_l: "OV" },
-        // 第五區 (綜合)
+        { q: "我是會計師，有 lee-cpa.com 跟 chen-cpa.com，在同一張憑證，要能展現事務所企業身分。", a_t: "Multi", a_l: "OV" },
         { q: "我們大電商，有 www.shop.com 加上 *.cdn.shop.com。要一張搞定，且我們是正式公司（SSL要有名稱）。", a_t: "Multi", a_l: "OV" },
         { q: "我們是政府單位，網址 www.city.tw。但預算被砍，只能用最便宜的，要下午生效，不需顯名。", a_t: "Single", a_l: "DV" },
         { q: "我們是線上casino（賭場），有 100 個客戶子網域 c1.dev.com, c2.dev.com... 每天增加，不想手動加名單。", a_t: "Wildcard", a_l: "DV" },
@@ -261,7 +253,7 @@
     ];
 
     let gameState = {
-        money: 0, fame: 0, cost: 100, days: 0,
+        money: 0, fame: 0, cost: 100,
         currentCustomer: null, 
         lastQuestion: null,
         timer: 0, globalTimer: 0,
@@ -283,8 +275,6 @@
 
         gameState.globalTimer++;
 
-        // 市場成本波動邏輯
-        // 第一次在3秒，後續每10秒變動一次
         if (gameState.globalTimer === 3 || (gameState.globalTimer > 3 && (gameState.globalTimer - 3) % 10 === 0)) {
             updateMarketCost();
         }
@@ -300,7 +290,7 @@
 
         if (gameState.timer === 30) {
             document.getElementById('counter').classList.add('angry-mode');
-            addLog("📢 客戶不爽了：成交金額 9 折計！", "orange");
+            addLog("客戶等太久變臉，獎金剩 9 折了😭！", "orange");
         } else if (gameState.timer === 60) {
             gameState.wrongAnswers.push({
                 q: gameState.currentCustomer.q,
@@ -310,13 +300,13 @@
             gameState.combo = 0;
             let p = Math.floor(Math.random() * 10) + 1;
             gameState.fame = Math.max(0, gameState.fame - p);
-            addLog(`🏃 跑單：等太久氣跑了！知名度 -${p}%`, "red");
+            addLog(`🏃 客戶等太久氣跑了！知名度 -${p}%`, "red");
             triggerShake();
             nextCustomer();
         } else if (gameState.timer === 90) {
             let p = Math.floor(Math.random() * 7501) + 500;
             gameState.money = Math.max(0, gameState.money - p);
-            addLog(`💢 主管：你是在發呆嗎！罰金 $${p}`, "red");
+            addLog(`💢 主管：多久沒業績了！扣錢 $${p}`, "red");
             triggerShake();
         }
         updateUI();
@@ -325,16 +315,11 @@
     function updateMarketCost() {
         let oldCost = gameState.cost;
         let newCost;
-        
-        // 隨機產生 90-110 之間的數字，且不能跟上次一樣
         do {
             newCost = Math.floor(Math.random() * 21) + 90;
         } while (newCost === oldCost);
-
         gameState.cost = newCost;
-        
         let reason = MARKET_REASONS[Math.floor(Math.random() * MARKET_REASONS.length)];
-        let direction = newCost > oldCost ? "上漲" : "下跌";
         addLog(`📉 成本變動：因為「${reason}」，變動率調整為 ${gameState.cost}%！`, "orange");
         document.getElementById('val-cost').innerText = gameState.cost + "%";
     }
@@ -393,36 +378,46 @@
         gameState.isProcessing = true;
 
         const isCorrect = (gameState.selectedType === gameState.currentCustomer.a_t && gameState.selectedLevel === gameState.currentCustomer.a_l);
-        const priceKey = `${gameState.selectedType}_${gameState.selectedLevel}`;
-        let baseReward = PRICING[priceKey] || 0;
+        
+        // 先計算正確解答的理論獎金（以 100% 變動率為基礎）
+        const correctPriceKey = `${gameState.currentCustomer.a_t}_${gameState.currentCustomer.a_l}`;
+        const baseCorrectReward = PRICING[correctPriceKey] || 1000;
 
-        if (isCorrect && baseReward > 0) {
+        if (isCorrect) {
             gameState.combo++;
             let fameGain = (gameState.combo >= 5) ? 16 : (gameState.combo >= 3 ? 12 : 8);
             let timerDiscount = gameState.timer >= 30 ? 0.9 : 1.0;
-            let reward = Math.floor(baseReward * (gameState.cost / 100) * timerDiscount);
+            let reward = Math.floor(baseCorrectReward * (gameState.cost / 100) * timerDiscount);
             
             gameState.money += reward;
             gameState.fame = Math.min(100, gameState.fame + fameGain);
             document.getElementById('customer-icon').innerText = "🤩";
             addLog(`✅ 成交！收入 +$${reward}, 知名度 +${fameGain} (Combo x${gameState.combo})`, "green");
         } else {
+            // 處罰邏輯：正確答案的 20%
+            let finalPenalty = Math.floor(baseCorrectReward * 0.2);
+
             gameState.wrongAnswers.push({
                 q: gameState.currentCustomer.q,
                 user: `${gameState.selectedType || "未選"} + ${gameState.selectedLevel || "未選"}`,
                 correct: `${gameState.currentCustomer.a_t} + ${gameState.currentCustomer.a_l}`
             });
+            
             gameState.combo = 0;
-            gameState.money = Math.max(0, gameState.money - 1000);
+            gameState.money = Math.max(0, gameState.money - finalPenalty);
             gameState.fame = Math.max(0, gameState.fame - 10);
+            
+            // 處罰視覺回饋
             document.getElementById('customer-icon').innerText = "🤬";
-            addLog(`❌ 判斷錯誤！遭罰 $1000, 連勝歸零`, "red");
+            document.getElementById('dialog-bubble').innerText = "叫你主管出來！";
+            
+            addLog(`❌ 賣錯產品！遭主管罰款 $${finalPenalty}, 知名度下降 10%, 連勝歸零`, "red");
             triggerShake();
         }
 
         updateUI();
         if (gameState.fame >= 100) endGame();
-        else setTimeout(nextCustomer, 1000);
+        else setTimeout(nextCustomer, 1500); 
     }
 
     function nextCustomer() {
@@ -502,6 +497,5 @@
         document.body.appendChild(winScreen);
     }
 </script>
-
 </body>
 </html>
